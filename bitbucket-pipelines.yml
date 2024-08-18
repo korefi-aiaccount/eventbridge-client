@@ -7,6 +7,7 @@ pipelines:
           name: Lint
           script:
             - echo "Running linter..."
+            - make install
             - make lint
           after-script:
             - if [ $BITBUCKET_EXIT_CODE -ne 0 ]; then echo "Lint failed. PR will be declined."; exit 1; fi
