@@ -63,11 +63,16 @@ esac
 
 NEW_TAG="v${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.${VERSION_PARTS[2]}"
 
+# Update setup.py with the new version
+sed -i "s/version=\"[^\"]*\"/version=\"${NEW_TAG#v}\"/" setup.py
+
+# Commit the changes to setup.py
+git add setup.py
+git commit -m "Update version in setup.py to ${NEW_TAG} [skip ci]"
+
 # Create a new tag
 git tag -a $NEW_TAG -m "Bump version to $NEW_TAG [skip ci]"
 
-# Push the new tag
+# Push the changes and the new tag
+git push origin HEAD:main
 git push origin $NEW_TAG
-
-# Update setup.py with the new version
-sed "s/version=\"[^\"]*\"/version=\"${NEW_TAG#v}\"/" setup.py > setup.py.tmp && mv setup.py.tmp setup.py
