@@ -7,8 +7,10 @@ This is a simple EventBridge client for producing and consuming events.
 To install the package, you can use pip:
 
 ```
-pip install git+https://github.com/yourusername/eventbridge_client.git
+pip install git+https://bitbucket.org/credit-application/eventbridge-client@<<stable-tagged>>
 ```
+
+Please add latest stable version in `<<stable-tagged>>`
 
 ## Usage
 
@@ -17,52 +19,35 @@ pip install git+https://github.com/yourusername/eventbridge_client.git
 ```python
 from eventbridge_client.producer import EventProducer
 
-producer = EventProducer()
+# Configuration
+SCHEMA_REGISTRY_URL = "http://localhost:8080"
+SCHEMA_ID = "FileUploaded-v0"
 
-event_detail = {"key": "value"}
-response = producer.produce(
-    event_bus_name="my-event-bus",
-    event_source="my-source",
-    detail_type="MyEventType",
-    detail=event_detail,
-    schema_name="MySchemaName"
-)
-print(f"Event produced: {response}")
-```
-
-### Consumer
-
-```python
-import logging
-from eventbridge_client.consumer import EventConsumer
-
-# For EventBridge Schema Registry
-schema_registry = SchemaRegistry('eventbridge', region_name='us-east-1')
-# For Apicurio Registry
-# schema_registry = SchemaRegistry('apicurio', url='https://your-apicurio-url.com')
-
-consumer = EventConsumer(
-    queue_url="https://sqs.us-east-1.amazonaws.com/123456789012/my-queue",
-    schema_registry=schema_registry,
-    schema_id="MySchemaName"  # or Schema ID for Apicurio
+# Initialize the EventProducer with the desired registry type
+producer = EventProducer(
+    registry_type="apicurio",
+    registry_url=SCHEMA_REGISTRY_URL,
 )
 
-while True:
-    try:
-        msg = consumer.poll(1.0)
-        logger.info("Pulling...")
-        if msg is None:
-            continue
+# Example event details
+event_bus_name = "my-event-bus"
+event_source = "my-application"
+detail_type = SCHEMA_ID
+detail = {
+    "user_id": "12345",
+    "email": "user@example.com",
+    "signup_date": "2024-03-15T10:30:00Z",
+}
+schema_name = SCHEMA_ID
 
-        # Validate and process the message
-        if process_msg(msg):
-            msg.commit()
-            logger.info("Message processed and committed successfully")
-        else:
-            logger.warning("Failed to process message, not committing")
-
-    except Exception as e:
-        logger.error(f"Unknown error: {e}")
+# Produce the event
+try:
+    response = producer.produce(
+        event_bus_name, event_source, detail_type, detail, schema_name
+    )
+    print(f"Event produced successfully: {response}")
+except Exception as e:
+    print(f"Failed to produce event: {e}")
 ```
 
-Make sure to set up your AWS credentials in your environment or configuration file before using this client.
+### Consumer (TODO)
