@@ -21,7 +21,6 @@ pipelines:
           name: Security Scan [TODO]
           script:
             - echo "Running security scan..."
-            # - npm audit
           after-script:
             - if [ $BITBUCKET_EXIT_CODE -ne 0 ]; then echo "Security scan failed. PR will be declined."; exit 1; fi
 
