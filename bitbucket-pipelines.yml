@@ -1,4 +1,4 @@
-image: atlassian/default-image:3
+image: python:3.9
 
 pipelines:
   pull-requests:
@@ -7,6 +7,7 @@ pipelines:
           name: Lint
           script:
             - echo "Running linter..."
+            - pip3 install flake8
             - make lint
           after-script:
             - if [ $BITBUCKET_EXIT_CODE -ne 0 ]; then echo "Lint failed. PR will be declined."; exit 1; fi
@@ -14,6 +15,7 @@ pipelines:
           name: Test
           script:
             - echo "Running build and tests..."
+            - pip3 install -r requirements.txt
             - make test
           after-script:
             - if [ $BITBUCKET_EXIT_CODE -ne 0 ]; then echo "Build and Test failed. PR will be declined."; exit 1; fi
@@ -21,7 +23,6 @@ pipelines:
           name: Security Scan [TODO]
           script:
             - echo "Running security scan..."
-            # - npm audit
           after-script:
             - if [ $BITBUCKET_EXIT_CODE -ne 0 ]; then echo "Security scan failed. PR will be declined."; exit 1; fi
 
