@@ -68,3 +68,6 @@ git tag -a $NEW_TAG -m "Bump version to $NEW_TAG [skip ci]"
 
 # Push the new tag
 git push origin $NEW_TAG
+
+# Update setup.py with the new version
+sed -i "s/version=\"[^\"]*\"/version=\"${NEW_TAG#v}\"/" setup.py
