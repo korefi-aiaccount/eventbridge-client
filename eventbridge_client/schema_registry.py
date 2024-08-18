@@ -38,7 +38,10 @@ class SchemaRegistry:
         try:
             response = requests.get(url, timeout=5)
             response.raise_for_status()
-            return response.json()
+            response_data = response.json()
+            schema_name = next(iter(response_data["components"]["schemas"]))
+            actual_schema = response_data["components"]["schemas"][schema_name]
+            return actual_schema
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to retrieve schema from Apicurio: {e}")
             raise

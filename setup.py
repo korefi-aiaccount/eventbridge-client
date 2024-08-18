@@ -7,6 +7,7 @@ setup(
     install_requires=[
         "boto3",
         "jsonschema",
+        "requests",
     ],
     author="Apurv Hajare",
     author_email="apurv@karboncard.com",
