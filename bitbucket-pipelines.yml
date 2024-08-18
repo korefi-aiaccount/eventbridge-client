@@ -7,7 +7,7 @@ pipelines:
           name: Lint
           script:
             - echo "Running linter..."
-            # - npm run lint
+            - make lint
           after-script:
             - if [ $BITBUCKET_EXIT_CODE -ne 0 ]; then echo "Lint failed. PR will be declined."; exit 1; fi
       - step:
@@ -18,14 +18,7 @@ pipelines:
           after-script:
             - if [ $BITBUCKET_EXIT_CODE -ne 0 ]; then echo "Build and Test failed. PR will be declined."; exit 1; fi
       - step:
-          name: Lint
-          script:
-            - echo "Running linter..."
-            # - npm run lint
-          after-script:
-            - if [ $BITBUCKET_EXIT_CODE -ne 0 ]; then echo "Lint failed. PR will be declined."; exit 1; fi
-      - step:
-          name: Security Scan
+          name: Security Scan [TODO]
           script:
             - echo "Running security scan..."
             # - npm audit

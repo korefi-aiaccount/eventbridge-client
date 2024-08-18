@@ -28,7 +28,7 @@ class SchemaRegistry:
             schema_response = self.schemas.describe_schema(SchemaName=schema_name)
             return json.loads(schema_response["Content"])
         except ClientError as e:
-            warnings.warn("Error fetching schema from EventBridge")
+            warnings.warn(f"Error fetching schema from EventBridge: {e}")
             raise
 
     def _get_apicurio_schema(self, schema_id):
@@ -41,5 +41,5 @@ class SchemaRegistry:
             actual_schema = response_data["components"]["schemas"][schema_name]
             return actual_schema
         except Exception as e:
-            warnings.warn("Failed to retrieve schema from Apicurio")
+            warnings.warn(f"Failed to retrieve schema from Apicurio: {e}")
             raise

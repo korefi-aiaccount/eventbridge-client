@@ -1,6 +1,5 @@
 import boto3
 import json
-import requests
 from botocore.exceptions import ClientError
 from jsonschema import validate
 import logging
