@@ -22,6 +22,20 @@ class SQSConsumer:
         processing_timeout: float = 5.0,
         endpoint_url: str = None,  # Add endpoint_url as a parameter
     ):
+        """
+        Initialize the SQSConsumer.
+
+        :param queue_url: URL of the SQS queue.
+        :param schema_registry: Schema registry instance.
+        :param schema_name: Name of the schema to validate messages against.
+        :param boto3_session: Boto3 session for AWS credentials.
+        :param poll_interval: Interval between polling the SQS queue.
+        :param visibility_timeout: Visibility timeout for SQS messages.
+        :param max_messages: Maximum number of messages to retrieve per poll.
+        :param wait_time: Wait time for long polling.
+        :param processing_timeout: Timeout for processing a single message.
+        :param endpoint_url: Custom endpoint URL for SQS.
+        """
         self.queue_url = queue_url
         self.schema_registry = schema_registry
         self.schema_name = schema_name
@@ -48,6 +62,12 @@ class SQSConsumer:
         self.sqs_client = self._create_sqs_client(boto3_session.region_name)
 
     def _create_sqs_client(self, region_name: str):
+        """
+        Create an SQS client.
+
+        :param region_name: AWS region name.
+        :return: Boto3 SQS client.
+        """
         self.logger.info("Initializing SQS client with:")
         self.logger.info(f"  Region: {region_name}")
         self.logger.info(f"  Endpoint URL: {self.endpoint_url}")
@@ -74,6 +94,11 @@ class SQSConsumer:
         return boto3.client("sqs", **client_kwargs)
 
     async def start(self, process_message: Callable[[Dict[str, Any]], None]):
+        """
+        Start the SQS consumer.
+
+        :param process_message: Callable to process each message.
+        """
         self.is_running = True
 
         while self.is_running:
@@ -97,7 +122,6 @@ class SQSConsumer:
                         validate(instance=get_detail, schema=self.schema)
 
                         await asyncio.wait_for(
-                            # asyncio.to_thread(process_message, body),
                             process_message(body),
                             timeout=self.processing_timeout,
                         )
@@ -125,6 +149,9 @@ class SQSConsumer:
             await asyncio.sleep(self.poll_interval)
 
     def stop(self):
+        """
+        Stop the SQS consumer.
+        """
         self.is_running = False
 
 
