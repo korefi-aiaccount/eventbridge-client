@@ -4,6 +4,8 @@ import boto3
 from botocore.exceptions import ClientError
 from jsonschema import validate
 from .schema_registry import SchemaRegistry
+import logging
+import os
 
 
 class SQSConsumer:
@@ -53,6 +55,25 @@ class SQSConsumer:
         :param process_message: A callable that processes a single message.
         """
         self.is_running = True
+
+        # Configure logging
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+
+        # Retrieve credentials from environment variables
+        aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
+        aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+        aws_session_token = os.getenv("AWS_SESSION_TOKEN")
+
+        # Log the credentials if they are present
+        if aws_access_key_id and aws_secret_access_key:
+            logger.info(f"AWS_ACCESS_KEY_ID: {aws_access_key_id}")
+            logger.info(f"AWS_SECRET_ACCESS_KEY: {aws_secret_access_key}")
+            if aws_session_token:
+                logger.info(f"AWS_SESSION_TOKEN: {aws_session_token}")
+        else:
+            logger.warning("AWS credentials are not set in the environment variables.")
+
         while self.is_running:
             try:
                 response = self.sqs_client.receive_message(
