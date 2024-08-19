@@ -51,3 +51,47 @@ except Exception as e:
 ```
 
 ### Consumer (TODO)
+
+```python
+# Example usage:
+async def process_message(message: Dict[str, Any]):
+    # Implement your message processing logic here
+    print(f"Processing message: {message}")
+
+
+async def run_consumer():
+    schema_registry = SchemaRegistry(
+        "your_registry_type", "your_registry_url", "your_region"
+    )
+    consumer = SQSConsumer(
+        queue_url="your_sqs_queue_url",
+        schema_registry=schema_registry,
+        schema_name="your_schema_name",
+        region_name="your_aws_region",
+    )
+    await consumer.start(process_message)
+
+
+# For FastAPI
+from fastapi import FastAPI
+
+app = FastAPI()
+
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(run_consumer())
+
+
+# For Django (in your app's ready() method)
+import django
+from django.apps import AppConfig
+
+
+class YourAppConfig(AppConfig):
+    name = "your_app_name"
+
+    def ready(self):
+        if not django.conf.settings.DEBUG:
+            asyncio.run(run_consumer())
+```
