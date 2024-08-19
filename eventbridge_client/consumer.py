@@ -5,7 +5,6 @@ from botocore.exceptions import ClientError
 from jsonschema import validate
 from .schema_registry import SchemaRegistry
 import logging
-import os
 import json
 
 
