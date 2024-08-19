@@ -27,14 +27,19 @@ class SQSConsumer:
 
         :param queue_url: URL of the SQS queue.
         :param schema_registry: Schema registry instance.
-        :param schema_name: Name of the schema to validate messages against.
+        :param schema_name: Name of the schema to validate messages against. Must be a valid schema name present in the schema registry.
         :param boto3_session: Boto3 session for AWS credentials.
-        :param poll_interval: Interval between polling the SQS queue.
+        :param poll_interval: Interval between polling the SQS queue. Should be a positive float, recommended between 0.1 and 60.0 seconds.
         :param visibility_timeout: Visibility timeout for SQS messages.
-        :param max_messages: Maximum number of messages to retrieve per poll.
-        :param wait_time: Wait time for long polling.
+                                   The period during which a message is invisible to other consumers after being retrieved from the queue.
+                                   Must be an integer between 0 and 43200 (12 hours).
+                                   Should be long enough to allow the message to be processed but short enough to reappear if processing fails.
+        :param max_messages: Maximum number of messages to retrieve per poll. Must be an integer between 1 and 10.
+        :param wait_time: Wait time for long polling. Must be an integer between 0 and 20 seconds.
         :param processing_timeout: Timeout for processing a single message.
-        :param endpoint_url: Custom endpoint URL for SQS.
+                                   The maximum time allowed for processing a single message.
+                                   Should be a positive float, recommended to be less than the visibility timeout to ensure the message is processed before it becomes visible again.
+        :param endpoint_url: Custom endpoint URL for SQS. Must be a valid URL or None for default endpoint.
         """
         self.queue_url = queue_url
         self.schema_registry = schema_registry
