@@ -46,7 +46,7 @@ class SQSConsumer:
         aws_session_token = os.getenv("AWS_SESSION_TOKEN")
         endpoint_url = os.getenv("AWS_ENDPOINT_URL")
 
-        self.logger.info(f"Initializing SQS client with:")
+        self.logger.info("Initializing SQS client with:")
         self.logger.info(f"  Region: {region_name}")
         self.logger.info(f"  Endpoint URL: {endpoint_url}")
         self.logger.info(f"  Access Key ID: {aws_access_key_id}")
