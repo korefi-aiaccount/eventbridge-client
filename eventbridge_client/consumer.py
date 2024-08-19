@@ -5,7 +5,6 @@ from botocore.exceptions import ClientError
 from jsonschema import validate
 from .schema_registry import SchemaRegistry
 import logging
-import os
 import json
 
 
@@ -15,12 +14,13 @@ class SQSConsumer:
         queue_url: str,
         schema_registry: SchemaRegistry,
         schema_name: str,
-        region_name: str,
+        boto3_session: boto3.Session,
         poll_interval: float = 1.0,
         visibility_timeout: int = 30,
         max_messages: int = 1,
         wait_time: int = 20,
         processing_timeout: float = 5.0,
+        endpoint_url: str = None,  # Add endpoint_url as a parameter
     ):
         self.queue_url = queue_url
         self.schema_registry = schema_registry
@@ -33,41 +33,43 @@ class SQSConsumer:
         self.is_running = False
         self.schema = self.schema_registry.get_schema(self.schema_name)
 
+        # Extract AWS credentials from boto3 session
+        credentials = boto3_session.get_credentials()
+        self.aws_access_key_id = credentials.access_key
+        self.aws_secret_access_key = credentials.secret_key
+        self.aws_session_token = credentials.token
+        self.endpoint_url = endpoint_url
+
         # Configure logging
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
         # Initialize SQS client
-        self.sqs_client = self._create_sqs_client(region_name)
+        self.sqs_client = self._create_sqs_client(boto3_session.region_name)
 
     def _create_sqs_client(self, region_name: str):
-        aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
-        aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-        aws_session_token = os.getenv("AWS_SESSION_TOKEN")
-        endpoint_url = os.getenv("AWS_ENDPOINT_URL")
-
         self.logger.info("Initializing SQS client with:")
         self.logger.info(f"  Region: {region_name}")
-        self.logger.info(f"  Endpoint URL: {endpoint_url}")
-        self.logger.info(f"  Access Key ID: {aws_access_key_id}")
+        self.logger.info(f"  Endpoint URL: {self.endpoint_url}")
+        self.logger.info(f"  Access Key ID: {self.aws_access_key_id}")
         self.logger.info(
-            f"  Secret Access Key: {'*' * len(aws_secret_access_key) if aws_secret_access_key else 'Not Set'}"
+            f"  Secret Access Key: {'*' * len(self.aws_secret_access_key) if self.aws_secret_access_key else 'Not Set'}"
         )
         self.logger.info(
-            f"  Session Token: {'Set' if aws_session_token else 'Not Set'}"
+            f"  Session Token: {'Set' if self.aws_session_token else 'Not Set'}"
         )
 
         client_kwargs = {
             "region_name": region_name,
-            "aws_access_key_id": aws_access_key_id,
-            "aws_secret_access_key": aws_secret_access_key,
+            "aws_access_key_id": self.aws_access_key_id,
+            "aws_secret_access_key": self.aws_secret_access_key,
         }
 
-        if endpoint_url:
-            client_kwargs["endpoint_url"] = endpoint_url
+        if self.endpoint_url:
+            client_kwargs["endpoint_url"] = self.endpoint_url
 
-        if aws_session_token:
-            client_kwargs["aws_session_token"] = aws_session_token
+        if self.aws_session_token:
+            client_kwargs["aws_session_token"] = self.aws_session_token
 
         return boto3.client("sqs", **client_kwargs)
 
@@ -117,7 +119,7 @@ class SQSConsumer:
                     self.logger.error(
                         "Invalid AWS credentials. Please check your AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
                     )
-                    break  # Exit the loop if credentials are invalid
+                    break
 
             await asyncio.sleep(self.poll_interval)
 
@@ -128,15 +130,20 @@ class SQSConsumer:
 # Example usage
 if __name__ == "__main__":
 
-    # Set environment variables
-    os.environ["AWS_ACCESS_KEY_ID"] = "test"
-    os.environ["AWS_SECRET_ACCESS_KEY"] = "test"
-    os.environ["AWS_ENDPOINT_URL"] = "http://localhost:4566"
+    AWS_ACCESS_KEY_ID = "test"
+    AWS_SECRET_ACCESS_KEY = "test"
+    AWS_ENDPOINT_URL = "http://localhost:4566"
 
     SQS_QUEUE_URL = "http://localhost:4566/000000000000/extraction-service-queue"
     REGISTRY_TYPE = "apicurio"
     SCHEMA_REGISTRY_URL = "http://localhost:8080"
     SCHEMA_ID = "FileUploaded-v0"
+
+    boto3_session = boto3.Session(
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        region_name="us-east-1",
+    )
 
     async def process_message(message: Dict[str, Any]):
         print(f"Processing message: {message}")
@@ -150,7 +157,8 @@ if __name__ == "__main__":
             poll_interval=30,
             schema_registry=schema_registry,
             schema_name=SCHEMA_ID,
-            region_name="us-east-1",
+            boto3_session=boto3_session,
+            endpoint_url="http://localhost:4566",
         )
         await consumer.start(process_message)
 
