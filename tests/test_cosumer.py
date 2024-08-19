@@ -2,7 +2,8 @@ import pytest
 from unittest.mock import MagicMock, patch
 import asyncio
 import boto3
-from botocore.exceptions import ClientError
+
+# from botocore.exceptions import ClientError
 from eventbridge_client import SQSConsumer, SchemaRegistry
 
 
