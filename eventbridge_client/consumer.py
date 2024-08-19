@@ -97,7 +97,8 @@ class SQSConsumer:
                         validate(instance=get_detail, schema=self.schema)
 
                         await asyncio.wait_for(
-                            asyncio.to_thread(process_message, body),
+                            # asyncio.to_thread(process_message, body),
+                            process_message(body),
                             timeout=self.processing_timeout,
                         )
 
