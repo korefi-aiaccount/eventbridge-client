@@ -50,7 +50,42 @@ except Exception as e:
     print(f"Failed to produce event: {e}")
 ```
 
-### Consumer (TODO)
+### Consumer
+
+Example 1
+
+```Python
+    # Set environment variables
+os.environ["AWS_ACCESS_KEY_ID"] = "test"
+os.environ["AWS_SECRET_ACCESS_KEY"] = "test"
+os.environ["AWS_ENDPOINT_URL"] = "http://localhost:4566"
+
+SQS_QUEUE_URL = "http://localhost:4566/000000000000/extraction-service-queue"
+REGISTRY_TYPE = "apicurio"
+SCHEMA_REGISTRY_URL = "http://localhost:8080"
+SCHEMA_ID = "FileUploaded-v0"
+
+async def process_message(message: Dict[str, Any]):
+    print(f"Processing message: {message}")
+
+async def run_consumer():
+    schema_registry = SchemaRegistry(
+        REGISTRY_TYPE, SCHEMA_REGISTRY_URL, "us-east-1"
+    )
+    consumer = SQSConsumer(
+        queue_url=SQS_QUEUE_URL,
+        poll_interval=30,
+        schema_registry=schema_registry,
+        schema_name=SCHEMA_ID,
+        region_name="us-east-1",
+    )
+    await consumer.start(process_message)
+
+# Run the consumer
+asyncio.run(run_consumer())
+```
+
+Example 2
 
 ```python
 # Example usage:
