@@ -3,3 +3,4 @@ jsonschema
 requests
 pytest
 flake8
+pytest-asyncio

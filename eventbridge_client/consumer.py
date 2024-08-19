@@ -20,7 +20,7 @@ class SQSConsumer:
         max_messages: int = 1,
         wait_time: int = 20,
         processing_timeout: float = 5.0,
-        endpoint_url: str = None,  # Add endpoint_url as a parameter
+        endpoint_url: str = None,
     ):
         """
         Initialize the SQSConsumer.
