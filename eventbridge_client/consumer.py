@@ -39,7 +39,13 @@ class SQSConsumer:
         self.queue_url = queue_url
         self.schema_registry = schema_registry
         self.schema_name = schema_name
-        self.sqs_client = boto3.client("sqs", region_name=region_name)
+        self.sqs_client = boto3.client(
+            "sqs",
+            region_name=region_name,
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            aws_session_token=os.getenv("AWS_SESSION_TOKEN"),  # Add this line
+        )
         self.poll_interval = poll_interval
         self.visibility_timeout = visibility_timeout
         self.max_messages = max_messages
