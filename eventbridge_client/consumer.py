@@ -60,6 +60,8 @@ class SQSConsumer:
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger(__name__)
 
+        print("Getting AWS Creds")
+
         # Retrieve credentials from environment variables
         aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
         aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -67,11 +69,13 @@ class SQSConsumer:
 
         # Log the credentials if they are present
         if aws_access_key_id and aws_secret_access_key:
+            print("Getting AWS Creds", aws_access_key_id)
             logger.info(f"AWS_ACCESS_KEY_ID: {aws_access_key_id}")
             logger.info(f"AWS_SECRET_ACCESS_KEY: {aws_secret_access_key}")
             if aws_session_token:
                 logger.info(f"AWS_SESSION_TOKEN: {aws_session_token}")
         else:
+            print("Getting AWS Creds, No")
             logger.warning("AWS credentials are not set in the environment variables.")
 
         while self.is_running:
