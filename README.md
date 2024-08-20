@@ -1,6 +1,12 @@
 # EventBridge Client
 
-This is a simple EventBridge client for producing and consuming events.
+A simple EventBridge client for producing and consuming events with Schema Validation.
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [Start schema registry for local development](#start-schema-registry-for-local-development)
 
 ## Installation
 
@@ -13,6 +19,10 @@ pip install git+https://bitbucket.org/credit-application/eventbridge-client@<<st
 Please add latest stable version in `<<stable-tagged>>`
 
 ## Usage
+
+### Start Schema Registry
+
+For local dev env, please use Apicurio Schema registry.
 
 ### Producer
 
@@ -129,3 +139,9 @@ async def lifespan(app: FastAPI):
     await run_consumer()
     yield
 ```
+
+## Start schema registry for local development
+
+1. git clone repo -
+   https://bitbucket.org/credit-application/central-schema-registry/src/main/
+2. run command `make start-service-locally`
