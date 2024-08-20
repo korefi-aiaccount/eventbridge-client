@@ -27,10 +27,12 @@ For local dev env, please use Apicurio Schema registry.
 ### Producer
 
 ```python
+# Setup Schema config
 SCHEMA_REGISTRY_URL = "http://localhost:8080"
 SCHEMA_ID = "FileUploaded-v0"
 REGISTRY_TYPE = "apicurio"
 
+# Setup AWS config
 AWS_ACCESS_KEY_ID = "test"
 AWS_SECRET_ACCESS_KEY = "test"
 AWS_ENDPOINT_URL = "http://localhost:4566"
@@ -41,6 +43,7 @@ boto3_session = boto3.Session(
     region_name="us-east-1",
 )
 
+# Create schema_registry
 schema_registry = SchemaRegistry(REGISTRY_TYPE, SCHEMA_REGISTRY_URL)
 producer = EventProducer(
     schema_registry=schema_registry,
@@ -48,7 +51,7 @@ producer = EventProducer(
     endpoint_url="http://localhost:4566",
 )
 
-# Example event details
+# Example producer payload
 event_bus_name = "my-event-bus"
 event_source = "my-application"
 detail_type = SCHEMA_ID
@@ -80,6 +83,7 @@ detail = {
 }
 schema_name = SCHEMA_ID
 
+# Produce event
 try:
     response = producer.produce(
         event_bus_name, event_source, detail_type, detail, schema_name
