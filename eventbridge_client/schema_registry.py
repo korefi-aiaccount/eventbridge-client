@@ -23,9 +23,12 @@ class SchemaRegistry:
         else:
             raise ValueError(f"Unsupported registry type: {self.registry_type}")
 
-    def _get_eventbridge_schema(self, schema_name):
+    def _get_eventbridge_schema(self, schema_name, registry_name="korefi-schema-registry"):
         try:
-            schema_response = self.schemas.describe_schema(SchemaName=schema_name)
+            schema_response = self.schemas.describe_schema(
+                SchemaName=schema_name,
+                RegistryName=registry_name
+            )
             return json.loads(schema_response["Content"])
         except ClientError as e:
             warnings.warn(f"Error fetching schema from EventBridge: {e}")
