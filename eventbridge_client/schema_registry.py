@@ -7,7 +7,7 @@ from functools import lru_cache
 
 
 class SchemaRegistry:
-    def __init__(self, registry_type, url=None, region_name="us-east-1"):
+    def __init__(self, registry_type, url=None, region_name="ap-south-1"):
         self.registry_type = registry_type
         self.url = url
         self.region_name = region_name
