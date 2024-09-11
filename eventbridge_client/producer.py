@@ -24,29 +24,15 @@ class EventProducer:
         :param boto3_session: A boto3 session object with AWS credentials and configuration.
         :param endpoint_url: Optional custom endpoint URL for the EventBridge client.
         """
-        # Extract AWS credentials from boto3 session
-        credentials = boto3_session.get_credentials()
-        self.aws_access_key_id = credentials.access_key
-        self.aws_secret_access_key = credentials.secret_key
-        self.aws_session_token = credentials.token
-
-        client_kwargs = {
-            "region_name": boto3_session.region_name,
-            "aws_access_key_id": self.aws_access_key_id,
-            "aws_secret_access_key": self.aws_secret_access_key,
-        }
-
+        self.schema_registry = schema_registry
         self.endpoint_url = endpoint_url
 
+        # Create EventBridge client using the provided boto3 session
+        client_kwargs = {}
         if self.endpoint_url:
             client_kwargs["endpoint_url"] = self.endpoint_url
 
-        if self.aws_session_token:
-            client_kwargs["aws_session_token"] = self.aws_session_token
-
-        self.eventbridge = boto3.client("events", **client_kwargs)
-
-        self.schema_registry = schema_registry
+        self.eventbridge = boto3_session.client("events", **client_kwargs)
 
     def produce(
         self,
