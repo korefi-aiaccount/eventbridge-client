@@ -51,52 +51,31 @@ class SQSConsumer:
         self.processing_timeout = processing_timeout
         self.is_running = False
         self.schema = self.schema_registry.get_schema(self.schema_name)
-
-        # Extract AWS credentials from boto3 session
-        credentials = boto3_session.get_credentials()
-        self.aws_access_key_id = credentials.access_key
-        self.aws_secret_access_key = credentials.secret_key
-        self.aws_session_token = credentials.token
         self.endpoint_url = endpoint_url
+        self.boto3_session = boto3_session
 
         # Configure logging
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
         # Initialize SQS client
-        self.sqs_client = self._create_sqs_client(boto3_session.region_name)
+        self.sqs_client = self._create_sqs_client()
 
-    def _create_sqs_client(self, region_name: str):
+    def _create_sqs_client(self):
         """
-        Create an SQS client.
+        Create an SQS client using the boto3 session.
 
-        :param region_name: AWS region name.
         :return: Boto3 SQS client.
         """
         self.logger.info("Initializing SQS client with:")
-        self.logger.info(f"  Region: {region_name}")
+        self.logger.info(f"  Region: {self.boto3_session.region_name}")
         self.logger.info(f"  Endpoint URL: {self.endpoint_url}")
-        self.logger.info(f"  Access Key ID: {self.aws_access_key_id}")
-        self.logger.info(
-            f"  Secret Access Key: {'*' * len(self.aws_secret_access_key) if self.aws_secret_access_key else 'Not Set'}"
-        )
-        self.logger.info(
-            f"  Session Token: {'Set' if self.aws_session_token else 'Not Set'}"
-        )
 
-        client_kwargs = {
-            "region_name": region_name,
-            "aws_access_key_id": self.aws_access_key_id,
-            "aws_secret_access_key": self.aws_secret_access_key,
-        }
-
+        client_kwargs = {}
         if self.endpoint_url:
             client_kwargs["endpoint_url"] = self.endpoint_url
 
-        if self.aws_session_token:
-            client_kwargs["aws_session_token"] = self.aws_session_token
-
-        return boto3.client("sqs", **client_kwargs)
+        return self.boto3_session.client("sqs", **client_kwargs)
 
     async def start(self, process_message: Callable[[Dict[str, Any]], None]):
         """
