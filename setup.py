@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="eventbridge-client",
-    version="0.4.17",
+    version="0.4.18",
     packages=find_packages(),
     install_requires=[
         "boto3",
