@@ -4,7 +4,7 @@ import boto3
 from botocore.exceptions import ClientError
 from jsonschema import validate
 
-from .utils import extract_trace_context, setup_tracing
+from .tracing import extract_trace_context, setup_tracing
 from .schema_registry import SchemaRegistry
 import logging
 import json
@@ -23,9 +23,9 @@ class SQSConsumer:
         wait_time: int = 20,
         processing_timeout: float = 5.0,
         endpoint_url: str = None,
-        event_source: str = "default-name",
-        jaeger_host: str = "localhost",
-        jaeger_port: int = 6831,
+        event_source: str = "unknown",
+        tracing_host: str = "localhost",
+        tracing_port: int = 6831,
     ):
         """
         Initialize the SQSConsumer.
@@ -62,7 +62,7 @@ class SQSConsumer:
 
         # Set up tracing
         self.tracer, self.propagator = setup_tracing(
-            self.event_source, jaeger_host, jaeger_port
+            self.event_source, tracing_host, tracing_port
         )
 
         # Configure logging
@@ -102,15 +102,17 @@ class SQSConsumer:
         body = message["Body"]
         body_dict = json.loads(body)
         get_detail = body_dict["detail"]
-        with self.tracer.start_as_current_span(
-            "Validate Consume Event",
-        ):
+
+        span_name = f"Validate {body_dict['detail-type']} Event"
+        with self.tracer.start_as_current_span(span_name):
             validate(instance=get_detail, schema=self.schema)
 
-        await asyncio.wait_for(
-            process_message(body),
-            timeout=self.processing_timeout,
-        )
+        span_name = f"Processe {body_dict['detail-type']} Event"
+        with self.tracer.start_as_current_span(span_name):
+            await asyncio.wait_for(
+                process_message(body),
+                timeout=self.processing_timeout,
+            )
 
         self.sqs_client.delete_message(
             QueueUrl=self.queue_url,
@@ -147,7 +149,7 @@ class SQSConsumer:
 
                         # Extract the trace context from the message attributes
                         context = extract_trace_context(get_detail, self.propagator)
-                        span_name = f"consume {body_dict['detail-type']} event"
+                        span_name = f"Consume {body_dict['detail-type']} Event"
                         with self.tracer.start_as_current_span(
                             span_name,
                             context,
