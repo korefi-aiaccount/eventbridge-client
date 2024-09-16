@@ -45,7 +45,7 @@ def setup_tracing(
         tracer_provider = TracerProvider(resource=resource, id_generator=id_generator)
 
         if use_xray:
-            logger.info(f"Using AWS X-Ray for tracing in region: {aws_region}")
+            logger.debug(f"Using AWS X-Ray for tracing in region: {aws_region}")
             otlp_exporter = OTLPSpanExporter(
                 endpoint=f"https://xray.{aws_region}.amazonaws.com"
             )
@@ -62,7 +62,7 @@ def setup_tracing(
         set_global_textmap(_propagator)  # Corrected line
 
         _tracer = trace.get_tracer(__name__)
-        logger.info("Tracer and propagator have been set up.")
+        logger.debug("Tracer and propagator have been set up.")
 
     return _tracer, _propagator
 
