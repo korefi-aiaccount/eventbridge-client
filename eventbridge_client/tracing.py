@@ -32,6 +32,7 @@ def setup_tracing(
         BotocoreInstrumentor().instrument()
 
         use_xray = os.environ.get("USE_XRAY", "false").lower() == "true"
+        aws_region = os.environ.get("AWS_REGION", "ap-south-1")
 
         resource = Resource(attributes={ResourceAttributes.SERVICE_NAME: service_name})
 
@@ -40,7 +41,7 @@ def setup_tracing(
 
         if use_xray:
             otlp_exporter = OTLPSpanExporter(
-                endpoint="https://xray.us-east-1.amazonaws.com"
+                endpoint=f"https://xray.{aws_region}.amazonaws.com"
             )
             tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
             _propagator = AwsXRayPropagator()
