@@ -32,7 +32,7 @@ def setup_tracing(
         BotocoreInstrumentor().instrument()
 
         use_xray = os.environ.get("USE_XRAY", "false").lower() == "true"
-        aws_region = os.environ.get("AWS_REGION", "ap-south-1")
+        aws_region = os.environ.get("AWS_DEFAULT_REGION", "ap-south-1")
 
         resource = Resource(attributes={ResourceAttributes.SERVICE_NAME: service_name})
 
