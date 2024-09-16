@@ -15,6 +15,8 @@ from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.propagators.aws import AwsXRayPropagator
 from opentelemetry.sdk.extension.aws.trace import AwsXRayIdGenerator
 from opentelemetry.propagate import set_global_textmap
+from opentelemetry.context import Context
+
 from typing import Any, Dict
 import functools
 
@@ -23,7 +25,7 @@ _propagator = None
 
 
 def setup_tracing(
-    service_name: str, jaeger_host: str = "localhost", jaeger_port: int = 6831
+    service_name: str, tracing_host: str = "localhost", tracing_port: int = 6831
 ):
     global _tracer, _propagator
     if _tracer is None or _propagator is None:
@@ -44,7 +46,7 @@ def setup_tracing(
             _propagator = AwsXRayPropagator()
         else:
             jaeger_exporter = JaegerExporter(
-                agent_host_name=jaeger_host, agent_port=jaeger_port
+                agent_host_name=tracing_host, agent_port=tracing_port
             )
             tracer_provider.add_span_processor(BatchSpanProcessor(jaeger_exporter))
             _propagator = TraceContextTextMapPropagator()
@@ -77,7 +79,7 @@ def trace_span(span_name):
     return decorator_trace_span
 
 
-def extract_trace_context(get_detail: Dict[str, Any], propagator) -> Any:
+def extract_trace_context(get_detail: Dict[str, Any], propagator) -> Context:
     """Extracts the trace context from the message details."""
     trace_context = get_detail.get("trace_context", {})
     return propagator.extract(trace_context)
