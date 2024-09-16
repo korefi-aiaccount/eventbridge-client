@@ -3,6 +3,8 @@ from typing import Callable, Dict, Any
 import boto3
 from botocore.exceptions import ClientError
 from jsonschema import validate
+
+from .utils import extract_trace_context, setup_tracing
 from .schema_registry import SchemaRegistry
 import logging
 import json
@@ -21,6 +23,9 @@ class SQSConsumer:
         wait_time: int = 20,
         processing_timeout: float = 5.0,
         endpoint_url: str = None,
+        event_source: str = "default-name",
+        jaeger_host: str = "localhost",
+        jaeger_port: int = 6831,
     ):
         """
         Initialize the SQSConsumer.
@@ -53,6 +58,12 @@ class SQSConsumer:
         self.schema = self.schema_registry.get_schema(self.schema_name)
         self.endpoint_url = endpoint_url
         self.boto3_session = boto3_session
+        self.event_source = event_source
+
+        # Set up tracing
+        self.tracer, self.propagator = setup_tracing(
+            self.event_source, jaeger_host, jaeger_port
+        )
 
         # Configure logging
         logging.basicConfig(level=logging.INFO)
@@ -76,6 +87,36 @@ class SQSConsumer:
             client_kwargs["endpoint_url"] = self.endpoint_url
 
         return self.boto3_session.client("sqs", **client_kwargs)
+
+    async def _process_and_delete_message(
+        self,
+        message: Dict[str, Any],
+        process_message: Callable[[Dict[str, Any]], None],
+    ):
+        """
+        Process and delete a single SQS message.
+
+        :param message: The SQS message to process.
+        :param process_message: Callable to process the message.
+        """
+        body = message["Body"]
+        body_dict = json.loads(body)
+        get_detail = body_dict["detail"]
+        with self.tracer.start_as_current_span(
+            "Validate Consume Event",
+        ):
+            validate(instance=get_detail, schema=self.schema)
+
+        await asyncio.wait_for(
+            process_message(body),
+            timeout=self.processing_timeout,
+        )
+
+        self.sqs_client.delete_message(
+            QueueUrl=self.queue_url,
+            ReceiptHandle=message["ReceiptHandle"],
+        )
+        self.logger.info("Message processed and deleted from queue")
 
     async def start(self, process_message: Callable[[Dict[str, Any]], None]):
         """
@@ -103,18 +144,17 @@ class SQSConsumer:
                         body = message["Body"]
                         body_dict = json.loads(body)
                         get_detail = body_dict["detail"]
-                        validate(instance=get_detail, schema=self.schema)
 
-                        await asyncio.wait_for(
-                            process_message(body),
-                            timeout=self.processing_timeout,
-                        )
-
-                        self.sqs_client.delete_message(
-                            QueueUrl=self.queue_url,
-                            ReceiptHandle=message["ReceiptHandle"],
-                        )
-                        self.logger.info("Message processed and deleted from queue")
+                        # Extract the trace context from the message attributes
+                        context = extract_trace_context(get_detail, self.propagator)
+                        span_name = f"consume {body_dict['detail-type']} event"
+                        with self.tracer.start_as_current_span(
+                            span_name,
+                            context,
+                        ):
+                            await self._process_and_delete_message(
+                                message, process_message
+                            )
                     except asyncio.TimeoutError:
                         self.logger.error(
                             f"Message processing timed out after {self.processing_timeout} seconds"

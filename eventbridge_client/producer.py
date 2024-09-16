@@ -5,6 +5,7 @@ from jsonschema import validate
 import logging
 from .schema_registry import SchemaRegistry
 from typing import Any, Dict
+from .utils import inject_trace_context, setup_tracing
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -15,7 +16,10 @@ class EventProducer:
         self,
         schema_registry: SchemaRegistry,
         boto3_session: boto3.Session,
+        event_source: str = "default-name",
         endpoint_url: str = None,
+        jaeger_host: str = "localhost",
+        jaeger_port: int = 6831,
     ):
         """
         Initialize the EventProducer.
@@ -26,6 +30,12 @@ class EventProducer:
         """
         self.schema_registry = schema_registry
         self.endpoint_url = endpoint_url
+        self.event_source = event_source
+
+        # Set up tracing
+        self.tracer, self.propagator = setup_tracing(
+            self.event_source, jaeger_host, jaeger_port
+        )
 
         # Create EventBridge client using the provided boto3 session
         client_kwargs = {}
@@ -37,7 +47,6 @@ class EventProducer:
     def produce(
         self,
         event_bus_name: str,
-        event_source: str,
         detail_type: str,
         detail: Dict[str, Any],
         schema_name: str,
@@ -46,30 +55,39 @@ class EventProducer:
         Produce an event to the specified EventBridge event bus.
 
         :param event_bus_name: The name of the EventBridge event bus.
-        :param event_source: The source of the event.
         :param detail_type: The type of detail in the event.
         :param detail: The event detail as a dictionary.
         :param schema_name: The name of the schema to validate the event detail against.
         :return: The response from the EventBridge put_events API call.
         """
-        self._validate_event(detail, schema_name)
+        span_name = f"produce {detail_type} event"
+        with self.tracer.start_as_current_span(span_name) as span:
+            span.set_attribute("event_bus_name", event_bus_name)
+            span.set_attribute("event_source", self.event_source)
+            span.set_attribute("detail_type", detail_type)
+            span.set_attribute("schema_name", schema_name)
 
-        try:
-            response = self.eventbridge.put_events(
-                Entries=[
-                    {
-                        "Source": event_source,
-                        "DetailType": detail_type,
-                        "Detail": json.dumps(detail),
-                        "EventBusName": event_bus_name,
-                    }
-                ]
-            )
-            logger.info(f"Event produced successfully: {response}")
-            return response
-        except ClientError as e:
-            logger.error(f"Error producing event: {e}")
-            raise
+            self._validate_event(detail, schema_name)
+
+            try:
+                # Inject the current trace context into the detail
+                inject_trace_context(self.propagator, detail)
+
+                response = self.eventbridge.put_events(
+                    Entries=[
+                        {
+                            "Source": self.event_source,
+                            "DetailType": detail_type,
+                            "Detail": json.dumps(detail),
+                            "EventBusName": event_bus_name,
+                        }
+                    ]
+                )
+                logger.info(f"Event produced successfully: {response}")
+                return response
+            except ClientError as e:
+                logger.error(f"Error producing event: {e}")
+                raise
 
     def _validate_event(self, detail: Dict[str, Any], schema_name: str) -> None:
         """
@@ -79,13 +97,16 @@ class EventProducer:
         :param schema_name: The name of the schema to validate the event detail against.
         :raises: Exception if the event detail does not conform to the schema.
         """
-        try:
-            schema = self.schema_registry.get_schema(schema_name)
-            validate(instance=detail, schema=schema)
-            logger.debug(f"Event validated successfully against schema: {schema_name}")
-        except Exception as e:
-            logger.error(f"Error validating event against schema: {e}")
-            raise
+        with self.tracer.start_as_current_span("Validate Produce Event"):
+            try:
+                schema = self.schema_registry.get_schema(schema_name)
+                validate(instance=detail, schema=schema)
+                logger.debug(
+                    f"Event validated successfully against schema: {schema_name}"
+                )
+            except Exception as e:
+                logger.error(f"Error validating event against schema: {e}")
+                raise
 
 
 # Example usage
