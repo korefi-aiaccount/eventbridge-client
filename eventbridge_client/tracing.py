@@ -50,7 +50,7 @@ def setup_tracing(
             tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
             _propagator = AwsXRayPropagator()
         else:
-            logger.info(f"Using Jaeger for tracing")
+            logger.info("Using Jaeger for tracing")
             jaeger_exporter = JaegerExporter(
                 agent_host_name=tracing_host, agent_port=tracing_port
             )
