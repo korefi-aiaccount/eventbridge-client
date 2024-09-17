@@ -22,7 +22,7 @@ import logging
 import functools
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 _tracer = None
@@ -45,13 +45,12 @@ def setup_tracing(
         tracer_provider = TracerProvider(resource=resource, id_generator=id_generator)
 
         if use_xray:
-            logger.debug(f"Using AWS X-Ray for tracing in region: {aws_region}")
-            otlp_exporter = OTLPSpanExporter(
-                endpoint=f"https://xray.{aws_region}.amazonaws.com"
-            )
+            logger.info(f"Using AWS X-Ray for tracing in region: {aws_region}")
+            otlp_exporter = OTLPSpanExporter()
             tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
             _propagator = AwsXRayPropagator()
         else:
+            logger.info(f"Using Jaeger for tracing")
             jaeger_exporter = JaegerExporter(
                 agent_host_name=tracing_host, agent_port=tracing_port
             )
@@ -62,7 +61,7 @@ def setup_tracing(
         set_global_textmap(_propagator)  # Corrected line
 
         _tracer = trace.get_tracer(__name__)
-        logger.debug("Tracer and propagator have been set up.")
+        logger.info("Tracer and propagator have been set up.")
 
     return _tracer, _propagator
 
