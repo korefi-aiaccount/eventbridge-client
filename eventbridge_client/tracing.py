@@ -38,6 +38,7 @@ def setup_tracing(
 
         use_xray = os.environ.get("USE_XRAY", "true").lower() == "true"
         aws_region = os.environ.get("AWS_DEFAULT_REGION", "ap-south-1")
+        otel_exporter_otlp_endpoint = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
 
         resource = Resource(attributes={ResourceAttributes.SERVICE_NAME: service_name})
 
@@ -46,7 +47,7 @@ def setup_tracing(
 
         if use_xray:
             logger.info(f"Using AWS X-Ray for tracing in region: {aws_region}")
-            otlp_exporter = OTLPSpanExporter()
+            otlp_exporter = OTLPSpanExporter(endpoint=otel_exporter_otlp_endpoint)
             tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
             _propagator = AwsXRayPropagator()
         else:
