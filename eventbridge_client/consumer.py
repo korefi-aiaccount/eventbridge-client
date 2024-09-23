@@ -151,8 +151,8 @@ class SQSConsumer:
                         context = extract_trace_context(get_detail, self.propagator)
                         span_name = f"Consume {body_dict['detail-type']} Event"
                         with self.tracer.start_as_current_span(
-                            span_name,
-                            context=context,
+                            span_name
+                            # context=context,
                         ):
                             await self._process_and_delete_message(
                                 message, process_message
