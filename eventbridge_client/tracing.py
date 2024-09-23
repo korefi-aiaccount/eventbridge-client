@@ -39,6 +39,7 @@ def setup_tracing(
         use_xray = os.environ.get("USE_XRAY", "true").lower() == "true"
         aws_region = os.environ.get("AWS_DEFAULT_REGION", "ap-south-1")
         otel_exporter_otlp_endpoint = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
+        logger.debug("otel_exporter_otlp_endpoint: ", otel_exporter_otlp_endpoint)
 
         resource = Resource(attributes={ResourceAttributes.SERVICE_NAME: service_name})
 
