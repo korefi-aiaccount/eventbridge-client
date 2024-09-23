@@ -1,5 +1,5 @@
 import boto3
-import json
+import json, os
 from botocore.exceptions import ClientError
 from jsonschema import validate
 import logging
@@ -7,8 +7,10 @@ from .schema_registry import SchemaRegistry
 from typing import Any, Dict
 from .tracing import inject_trace_context, setup_tracing
 
+# Configure logging
+logging_level = os.environ.get("LOGGING_LEVEL", "INFO").upper()
+logging.basicConfig(level=getattr(logging, logging_level, logging.INFO))
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class EventProducer:

@@ -7,8 +7,12 @@ from jsonschema import validate
 from .tracing import extract_trace_context, setup_tracing
 from .schema_registry import SchemaRegistry
 import logging
-import json
+import json, os
 
+# Configure logging
+logging_level = os.environ.get("LOGGING_LEVEL", "INFO").upper()
+logging.basicConfig(level=getattr(logging, logging_level, logging.INFO))
+logger = logging.getLogger(__name__)
 
 class SQSConsumer:
     def __init__(
@@ -64,10 +68,6 @@ class SQSConsumer:
         self.tracer, self.propagator = setup_tracing(
             self.event_source, tracing_host, tracing_port
         )
-
-        # Configure logging
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger(__name__)
 
         # Initialize SQS client
         self.sqs_client = self._create_sqs_client()

@@ -22,7 +22,8 @@ import logging
 import functools
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging_level = os.environ.get("LOGGING_LEVEL", "INFO").upper()
+logging.basicConfig(level=getattr(logging, logging_level, logging.INFO))
 logger = logging.getLogger(__name__)
 
 _tracer = None
@@ -73,6 +74,7 @@ def inject_trace_context(propagator, detail: Dict[str, Any]) -> None:
     trace_context = {}
     propagator.inject(trace_context)
     detail["trace_context"] = trace_context
+    logger.debug(f"Injected trace_context: {trace_context}")
 
 
 def trace_span(span_name):
@@ -91,4 +93,5 @@ def trace_span(span_name):
 def extract_trace_context(get_detail: Dict[str, Any], propagator) -> Context:
     """Extracts the trace context from the message details."""
     trace_context = get_detail.get("trace_context", {})
+    logger.debug(f"Extracted trace_context: {trace_context}")
     return propagator.extract(trace_context)

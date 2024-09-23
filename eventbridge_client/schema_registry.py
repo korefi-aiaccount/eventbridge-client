@@ -5,6 +5,11 @@ import requests
 from botocore.exceptions import ClientError
 from functools import lru_cache
 
+import logging, os
+
+logging_level = os.environ.get("LOGGING_LEVEL", "INFO").upper()
+logging.basicConfig(level=getattr(logging, logging_level, logging.INFO))
+logger = logging.getLogger(__name__)
 
 class SchemaRegistry:
     def __init__(self, registry_type, url=None, region_name="ap-south-1"):
@@ -31,7 +36,7 @@ class SchemaRegistry:
             )
             return json.loads(schema_response["Content"])
         except ClientError as e:
-            warnings.warn(f"Error fetching schema from EventBridge: {e}")
+            logger.warn(f"Error fetching schema from EventBridge: {e}")
             raise
 
     def _get_apicurio_schema(self, schema_id):
@@ -44,5 +49,5 @@ class SchemaRegistry:
             actual_schema = response_data["components"]["schemas"][schema_name]
             return actual_schema
         except Exception as e:
-            warnings.warn(f"Failed to retrieve schema from Apicurio: {e}")
+            logger.warn(f"Failed to retrieve schema from Apicurio: {e}")
             raise
