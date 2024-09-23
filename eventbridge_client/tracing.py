@@ -74,10 +74,9 @@ def setup_tracing(
 def inject_trace_context(propagator, detail: Dict[str, Any]) -> None:
     """Injects the current trace context into the event detail."""
     trace_context = {}
-    propagator.inject(
-        trace_context, context=trace.get_current_span().get_span_context()
-    )
+    propagator.inject(trace_context)
     detail["trace_context"] = trace_context
+    logger.debug(f"Injected trace_context: {trace_context}")
 
 
 def trace_span(span_name):
@@ -96,4 +95,5 @@ def trace_span(span_name):
 def extract_trace_context(get_detail: Dict[str, Any], propagator) -> Context:
     """Extracts the trace context from the message details."""
     trace_context = get_detail.get("trace_context", {})
+    logger.debug(f"Extracted trace_context: {trace_context}")
     return propagator.extract(trace_context)
