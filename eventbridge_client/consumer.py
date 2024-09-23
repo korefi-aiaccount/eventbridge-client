@@ -78,9 +78,9 @@ class SQSConsumer:
 
         :return: Boto3 SQS client.
         """
-        self.logger.info("Initializing SQS client with:")
-        self.logger.info(f"  Region: {self.boto3_session.region_name}")
-        self.logger.info(f"  Endpoint URL: {self.endpoint_url}")
+        logger.info("Initializing SQS client with:")
+        logger.info(f"  Region: {self.boto3_session.region_name}")
+        logger.info(f"  Endpoint URL: {self.endpoint_url}")
 
         client_kwargs = {}
         if self.endpoint_url:
@@ -118,7 +118,7 @@ class SQSConsumer:
             QueueUrl=self.queue_url,
             ReceiptHandle=message["ReceiptHandle"],
         )
-        self.logger.info("Message processed and deleted from queue")
+        logger.info("Message processed and deleted from queue")
 
     async def start(self, process_message: Callable[[Dict[str, Any]], None]):
         """
@@ -130,7 +130,7 @@ class SQSConsumer:
 
         while self.is_running:
             try:
-                self.logger.info(f"Polling SQS queue: {self.queue_url}")
+                logger.info(f"Polling SQS queue: {self.queue_url}")
                 response = self.sqs_client.receive_message(
                     QueueUrl=self.queue_url,
                     MaxNumberOfMessages=self.max_messages,
@@ -139,7 +139,7 @@ class SQSConsumer:
                 )
 
                 messages = response.get("Messages", [])
-                self.logger.info(f"Received {len(messages)} messages")
+                logger.info(f"Received {len(messages)} messages")
 
                 for message in messages:
                     try:
@@ -158,16 +158,16 @@ class SQSConsumer:
                                 message, process_message
                             )
                     except asyncio.TimeoutError:
-                        self.logger.error(
+                        logger.error(
                             f"Message processing timed out after {self.processing_timeout} seconds"
                         )
                     except Exception as e:
-                        self.logger.error(f"Error processing message: {str(e)}")
+                        logger.error(f"Error processing message: {str(e)}")
 
             except ClientError as e:
-                self.logger.error(f"Error receiving messages: {str(e)}")
+                logger.error(f"Error receiving messages: {str(e)}")
                 if "InvalidClientTokenId" in str(e):
-                    self.logger.error(
+                    logger.error(
                         "Invalid AWS credentials. Please check your AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
                     )
                     break
