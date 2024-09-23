@@ -39,7 +39,9 @@ def setup_tracing(
 
         use_xray = os.environ.get("USE_XRAY", "true").lower() == "true"
         aws_region = os.environ.get("AWS_DEFAULT_REGION", "ap-south-1")
-        otel_exporter_otlp_endpoint = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
+        otel_exporter_otlp_endpoint = os.environ.get(
+            "OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"
+        )
         logger.debug(f"otel_exporter_otlp_endpoint: {otel_exporter_otlp_endpoint}")
 
         resource = Resource(attributes={ResourceAttributes.SERVICE_NAME: service_name})
@@ -72,9 +74,10 @@ def setup_tracing(
 def inject_trace_context(propagator, detail: Dict[str, Any]) -> None:
     """Injects the current trace context into the event detail."""
     trace_context = {}
-    propagator.inject(trace_context)
+    propagator.inject(
+        trace_context, context=trace.get_current_span().get_span_context()
+    )
     detail["trace_context"] = trace_context
-    logger.debug(f"Injected trace_context: {trace_context}")
 
 
 def trace_span(span_name):
@@ -93,5 +96,4 @@ def trace_span(span_name):
 def extract_trace_context(get_detail: Dict[str, Any], propagator) -> Context:
     """Extracts the trace context from the message details."""
     trace_context = get_detail.get("trace_context", {})
-    logger.debug(f"Extracted trace_context: {trace_context}")
     return propagator.extract(trace_context)
