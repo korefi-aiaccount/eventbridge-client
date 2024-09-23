@@ -5,13 +5,20 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.propagators.aws import AwsXRayPropagator
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.semconv.resource import ResourceAttributes
 
+
+# Configure the resource with service name
+resource = Resource.create({
+    "service.name": "service-1"
+})
 
 # Configure OTLP exporter
 otlp_exporter = OTLPSpanExporter(endpoint="http://localhost:4317")
 
 # Set up tracer provider
-provider = TracerProvider()
+provider = TracerProvider(resource=resource)
 processor = BatchSpanProcessor(otlp_exporter)
 provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
@@ -22,8 +29,7 @@ tracer = trace.get_tracer(__name__)
 # Create a span
 with tracer.start_as_current_span("service-1-span") as span:
     # Do some work...
-    span.set_attribute("service", "service-1")
-
+    span.set_attribute("custom.attribute", "service-1-value")
 
     # Get the current context and serialize it
     propagator = TraceContextTextMapPropagator()
