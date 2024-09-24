@@ -8,6 +8,7 @@ from .tracing import extract_trace_context, setup_tracing
 from .schema_registry import SchemaRegistry
 import logging
 import json
+from opentelemetry import trace
 
 
 class SQSConsumer:
@@ -107,7 +108,7 @@ class SQSConsumer:
         with self.tracer.start_as_current_span(span_name):
             validate(instance=get_detail, schema=self.schema)
 
-        span_name = f"Processe {body_dict['detail-type']} Event"
+        span_name = f"Process {body_dict['detail-type']} Event"
         with self.tracer.start_as_current_span(span_name):
             await asyncio.wait_for(
                 process_message(body),
@@ -151,12 +152,12 @@ class SQSConsumer:
                         context = extract_trace_context(get_detail, self.propagator)
                         span_name = f"Consume {body_dict['detail-type']} Event"
                         with self.tracer.start_as_current_span(
-                            span_name,
-                            context,
+                            "consumer_wrapper", context, kind=trace.SpanKind.SERVER
                         ):
-                            await self._process_and_delete_message(
-                                message, process_message
-                            )
+                            with self.tracer.start_as_current_span(span_name):
+                                await self._process_and_delete_message(
+                                    message, process_message
+                                )
                     except asyncio.TimeoutError:
                         self.logger.error(
                             f"Message processing timed out after {self.processing_timeout} seconds"

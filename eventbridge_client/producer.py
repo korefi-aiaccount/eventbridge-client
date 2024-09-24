@@ -6,6 +6,7 @@ import logging
 from .schema_registry import SchemaRegistry
 from typing import Any, Dict
 from .tracing import inject_trace_context, setup_tracing
+from opentelemetry import trace
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -61,29 +62,33 @@ class EventProducer:
         :return: The response from the EventBridge put_events API call.
         """
         span_name = f"Produce {detail_type} Event"
-        with self.tracer.start_as_current_span(span_name):
-            with self.tracer.start_as_current_span(f"Validate {detail_type} Event"):
-                self._validate_event(detail, schema_name)
+        with self.tracer.start_as_current_span(
+            "producer_wrapper", kind=trace.SpanKind.SERVER
+        ):
+            with self.tracer.start_as_current_span(span_name):
+                with self.tracer.start_as_current_span(f"Validate {detail_type} Event"):
+                    self._validate_event(detail, schema_name)
 
-            try:
-                # Inject the current trace context into the detail
-                inject_trace_context(self.propagator, detail)
+                try:
+                    # Inject the current trace context into the detail
+                    inject_trace_context(self.propagator, detail)
 
-                response = self.eventbridge.put_events(
-                    Entries=[
-                        {
-                            "Source": self.event_source,
-                            "DetailType": detail_type,
-                            "Detail": json.dumps(detail),
-                            "EventBusName": event_bus_name,
-                        }
-                    ]
-                )
-                logger.info(f"Event produced successfully: {response}")
-                return response
-            except ClientError as e:
-                logger.error(f"Error producing event: {e}")
-                raise
+                    with self.tracer.start_as_current_span(f"Put {detail_type} Event"):
+                        response = self.eventbridge.put_events(
+                            Entries=[
+                                {
+                                    "Source": self.event_source,
+                                    "DetailType": detail_type,
+                                    "Detail": json.dumps(detail),
+                                    "EventBusName": event_bus_name,
+                                }
+                            ]
+                        )
+                    logger.info(f"Event produced successfully: {response}")
+                    return response
+                except ClientError as e:
+                    logger.error(f"Error producing event: {e}")
+                    raise
 
     def _validate_event(self, detail: Dict[str, Any], schema_name: str) -> None:
         """
