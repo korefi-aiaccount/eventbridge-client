@@ -70,16 +70,17 @@ class EventProducer:
                 # Inject the current trace context into the detail
                 inject_trace_context(self.propagator, detail)
 
-                response = self.eventbridge.put_events(
-                    Entries=[
-                        {
-                            "Source": self.event_source,
-                            "DetailType": detail_type,
-                            "Detail": json.dumps(detail),
-                            "EventBusName": event_bus_name,
-                        }
-                    ]
-                )
+                with self.tracer.start_as_current_span(f"Put {detail_type} Event"):
+                    response = self.eventbridge.put_events(
+                        Entries=[
+                            {
+                                "Source": self.event_source,
+                                "DetailType": detail_type,
+                                "Detail": json.dumps(detail),
+                                "EventBusName": event_bus_name,
+                            }
+                        ]
+                    )
                 logger.info(f"Event produced successfully: {response}")
                 return response
             except ClientError as e:

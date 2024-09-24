@@ -11,7 +11,8 @@ from opentelemetry.semconv.resource import ResourceAttributes
 from opentelemetry.trace.propagation.tracecontext import (
     TraceContextTextMapPropagator,
 )
-from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
+
+# from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.propagators.aws import AwsXRayPropagator
 from opentelemetry.sdk.extension.aws.trace import AwsXRayIdGenerator
 from opentelemetry.propagate import set_global_textmap
@@ -34,13 +35,10 @@ def setup_tracing(
 ):
     global _tracer, _propagator
     if _tracer is None or _propagator is None:
-        BotocoreInstrumentor().instrument()
+        # BotocoreInstrumentor().instrument()
 
         use_xray = os.environ.get("USE_XRAY", "true").lower() == "true"
         aws_region = os.environ.get("AWS_DEFAULT_REGION", "ap-south-1")
-        otel_exporter_otlp_endpoint = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
-        logger.debug(f"otel_exporter_otlp_endpoint: {otel_exporter_otlp_endpoint}")
-
         resource = Resource(attributes={ResourceAttributes.SERVICE_NAME: service_name})
 
         id_generator = AwsXRayIdGenerator() if use_xray else None
@@ -48,7 +46,7 @@ def setup_tracing(
 
         if use_xray:
             logger.info(f"Using AWS X-Ray for tracing in region: {aws_region}")
-            otlp_exporter = OTLPSpanExporter(endpoint=otel_exporter_otlp_endpoint)
+            otlp_exporter = OTLPSpanExporter()
             tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
             _propagator = AwsXRayPropagator()
         else:
