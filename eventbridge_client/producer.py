@@ -60,8 +60,14 @@ class EventProducer:
         :param schema_name: The name of the schema to validate the event detail against.
         :return: The response from the EventBridge put_events API call.
         """
-        span_name = f"Produce {detail_type} Event"
-        with self.tracer.start_as_current_span(span_name):
+        span_name = detail_type
+        attributes = {
+            "rpc.system": "aws-api",
+            "rpc.service": self.event_source,
+            "rpc.method": "Produce",
+        }
+        with self.tracer.start_as_current_span(span_name, attributes):
+            attributes.update({"rpc.method": "Validate"})
             with self.tracer.start_as_current_span(f"Validate {detail_type} Event"):
                 self._validate_event(detail, schema_name)
 

@@ -102,13 +102,20 @@ class SQSConsumer:
         body = message["Body"]
         body_dict = json.loads(body)
         get_detail = body_dict["detail"]
+        span_name = body_dict['detail-type']
+        attributes = {
+            "rpc.system": "aws-api",
+            "rpc.service": self.event_source,
+            "rpc.method": "Validate",
+        }
 
-        span_name = f"Validate {body_dict['detail-type']} Event"
-        with self.tracer.start_as_current_span(span_name):
+        with self.tracer.start_as_current_span(span_name, attributes):
             validate(instance=get_detail, schema=self.schema)
 
-        span_name = f"Processe {body_dict['detail-type']} Event"
-        with self.tracer.start_as_current_span(span_name):
+        span_name = body_dict['detail-type']
+        attributes.update({"rpc.method": "Process"})
+        
+        with self.tracer.start_as_current_span(span_name, attributes):
             await asyncio.wait_for(
                 process_message(body),
                 timeout=self.processing_timeout,
@@ -149,10 +156,16 @@ class SQSConsumer:
 
                         # Extract the trace context from the message attributes
                         context = extract_trace_context(get_detail, self.propagator)
-                        span_name = f"Consume {body_dict['detail-type']} Event"
+                        attributes = {
+                            "rpc.system": "aws-api",
+                            "rpc.service": self.event_source,
+                            "rpc.method": "Consume",
+                        }
+                        span_name = body_dict['detail-type']
                         with self.tracer.start_as_current_span(
                             span_name,
                             context,
+                            attributes
                         ):
                             await self._process_and_delete_message(
                                 message, process_message
