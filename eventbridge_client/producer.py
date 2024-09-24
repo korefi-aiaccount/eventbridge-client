@@ -66,9 +66,9 @@ class EventProducer:
             "rpc.service": self.event_source,
             "rpc.method": "Produce",
         }
-        with self.tracer.start_as_current_span(span_name, attributes):
+        with self.tracer.start_as_current_span(span_name, attributes=attributes):
             attributes.update({"rpc.method": "Validate"})
-            with self.tracer.start_as_current_span(f"Validate {detail_type} Event"):
+            with self.tracer.start_as_current_span(detail_type, attributes=attributes):
                 self._validate_event(detail, schema_name)
 
             try:
