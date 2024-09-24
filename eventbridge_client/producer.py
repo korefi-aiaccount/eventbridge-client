@@ -6,6 +6,7 @@ import logging
 from .schema_registry import SchemaRegistry
 from typing import Any, Dict
 from .tracing import inject_trace_context, setup_tracing
+from opentelemetry import trace
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -61,7 +62,7 @@ class EventProducer:
         :return: The response from the EventBridge put_events API call.
         """
         span_name = f"Produce {detail_type} Event"
-        with self.tracer.start_as_current_span(span_name):
+        with self.tracer.start_as_current_span(span_name, kind=trace.SpanKind.SERVER):
             with self.tracer.start_as_current_span(f"Validate {detail_type} Event"):
                 self._validate_event(detail, schema_name)
 

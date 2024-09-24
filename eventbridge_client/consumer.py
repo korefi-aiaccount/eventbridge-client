@@ -8,6 +8,7 @@ from .tracing import extract_trace_context, setup_tracing
 from .schema_registry import SchemaRegistry
 import logging
 import json
+from opentelemetry import trace
 
 
 class SQSConsumer:
@@ -151,8 +152,7 @@ class SQSConsumer:
                         context = extract_trace_context(get_detail, self.propagator)
                         span_name = f"Consume {body_dict['detail-type']} Event"
                         with self.tracer.start_as_current_span(
-                            span_name,
-                            context,
+                            span_name, context, kind=trace.SpanKind.SERVER
                         ):
                             await self._process_and_delete_message(
                                 message, process_message
