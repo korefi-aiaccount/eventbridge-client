@@ -1,1 +1,1 @@
-traceparent: 00-6ddeabdb547990ccdd1d41a382bb6c36-223689e2372fafcc-01
+X-Amzn-Trace-Id: Root=1-f203dffa-1cbbb0197bacdbcba8c5d5e2;Parent=e7c9af9cb3d6fd86;Sampled=1
