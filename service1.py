@@ -12,7 +12,7 @@ from opentelemetry.propagate import set_global_textmap
 
 # Configure the resource with service name
 resource = Resource.create({
-    ResourceAttributes.SERVICE_NAME: "service-1",
+    ResourceAttributes.SERVICE_NAME: "servicex-1",
 })
 
 
@@ -32,7 +32,12 @@ set_global_textmap(AwsXRayPropagator())
 tracer = trace.get_tracer(__name__)
 
 def service_1_function():
-    with tracer.start_as_current_span("service-1-operation", kind=trace.SpanKind.SERVER) as span:
+    attributes = {
+      "rpc.system": "aws-api",
+      "rpc.service": "servicex-1",
+      "rpc.method": "produce",
+    }
+    with tracer.start_as_current_span("service-1-operation", attributes=attributes) as span:
         # Do some work...
         span.set_attribute("custom.attribute", "service-1-value")
 

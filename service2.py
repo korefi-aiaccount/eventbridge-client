@@ -14,7 +14,7 @@ import time
 
 # Configure the resource with service name
 resource = Resource.create({
-    ResourceAttributes.SERVICE_NAME: "service-2",
+    ResourceAttributes.SERVICE_NAME: "servicex-2",
 })
 
 
@@ -45,18 +45,32 @@ def service_2_function():
     context = AwsXRayPropagator().extract(carrier)
 
     # Create a new span with the extracted context for service 2
-    with tracer_2.start_as_current_span("service-2-operation", context=context, kind=trace.SpanKind.SERVER) as span:
+    attributes = {
+        "rpc.system": "aws-api",
+        "rpc.service": "servicex-2",
+        "rpc.method": "process",
+    }
+    with tracer_2.start_as_current_span("service-2-operation", context=context, attributes=attributes) as span:
         span.set_attribute("custom.attribute", "service-2-value")
 
         # Mock producer step
-        with tracer_2.start_as_current_span("service-2-producer") as producer_span:
+        producer_attributes = {
+            "rpc.system": "aws-api",
+            "rpc.service": "servicex-2",
+            "rpc.method": "produce",
+        }
+        with tracer_2.start_as_current_span("service-2-producer", attributes=producer_attributes) as producer_span:
             producer_span.set_attribute("producer.action", "generate_data")
             # Simulate some work
             time.sleep(0.5)
             producer_span.add_event("Data generated")
 
         # Mock consumer step
-        with tracer_2.start_as_current_span("service-2-consumer") as consumer_span:
+        consumer_attributes = {
+            "rpc.system": "aws-api",
+            "rpc.service": "servicex-2",
+        }
+        with tracer_2.start_as_current_span("service-2-consumer", attributes=consumer_attributes) as consumer_span:
             consumer_span.set_attribute("consumer.action", "process_data")
             # Simulate some work
             time.sleep(0.7)
