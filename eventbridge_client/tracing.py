@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 _tracer = None
 _propagator = None
+_servertracecreated = False
 
 
 def setup_tracing(
