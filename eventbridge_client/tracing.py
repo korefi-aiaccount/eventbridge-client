@@ -76,11 +76,11 @@ def inject_trace_context(detail: Dict[str, Any]) -> None:
 def trace_span(span_name):
     def decorator_trace_span(func):
         @functools.wraps(func)
-        async def wrapper_trace_span(*args, **kwargs):  # Ensure it's async
-            context = kwargs.get("context", {})
+        async def wrapper_trace_span(*args, **kwargs):
+            context = kwargs.pop("trace_context", {})
             context = extract_trace_context(context)
             with _tracer.start_as_current_span(span_name, context):
-                result = await func(*args, **kwargs)  # Await the async function
+                result = await func(*args, **kwargs)
             return result
 
         return wrapper_trace_span
