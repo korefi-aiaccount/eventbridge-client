@@ -66,27 +66,29 @@ def setup_tracing(
     return _tracer, _propagator
 
 
-def inject_trace_context(propagator, detail: Dict[str, Any]) -> None:
+def inject_trace_context(detail: Dict[str, Any]) -> None:
     """Injects the current trace context into the event detail."""
     trace_context = {}
-    propagator.inject(trace_context)
+    _propagator.inject(trace_context)
     detail["trace_context"] = trace_context
 
 
 def trace_span(span_name):
     def decorator_trace_span(func):
         @functools.wraps(func)
-        def wrapper_trace_span(self, *args, **kwargs):
+        async def wrapper_trace_span(*args, **kwargs):  # Ensure it's async
             context = kwargs.get("context", {})
-            with self.tracer.start_as_current_span(span_name, context):
-                return func(self, *args, **kwargs)
+            context = extract_trace_context(context)
+            with _tracer.start_as_current_span(span_name, context):
+                result = await func(*args, **kwargs)  # Await the async function
+            return result
 
         return wrapper_trace_span
 
     return decorator_trace_span
 
 
-def extract_trace_context(get_detail: Dict[str, Any], propagator) -> Context:
+def extract_trace_context(get_detail: Dict[str, Any]) -> Context:
     """Extracts the trace context from the message details."""
     trace_context = get_detail.get("trace_context", {})
-    return propagator.extract(trace_context)
+    return _propagator.extract(trace_context)
