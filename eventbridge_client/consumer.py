@@ -149,7 +149,7 @@ class SQSConsumer:
                         get_detail = body_dict["detail"]
 
                         # Extract the trace context from the message attributes
-                        context = extract_trace_context(get_detail, self.propagator)
+                        context = extract_trace_context(get_detail)
                         span_name = f"Consume {body_dict['detail-type']} Event"
                         with self.tracer.start_as_current_span(
                             "consumer_wrapper", context, kind=trace.SpanKind.SERVER

@@ -71,7 +71,7 @@ class EventProducer:
 
                 try:
                     # Inject the current trace context into the detail
-                    inject_trace_context(self.propagator, detail)
+                    inject_trace_context(detail)
 
                     with self.tracer.start_as_current_span(f"Put {detail_type} Event"):
                         response = self.eventbridge.put_events(
