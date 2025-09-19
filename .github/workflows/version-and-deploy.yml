@@ -57,8 +57,7 @@ jobs:
         #   pip3 install bandit
         #   bandit -r .
   increment-version:
-    #needs: detect-changes
-    if: needs.detect-changes.outputs.non_experiment_changed == 'true'
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.base_ref == 'main'
     name: Create SemVer Tag
     runs-on: ubuntu-latest
     steps:
