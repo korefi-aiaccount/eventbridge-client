@@ -41,7 +41,7 @@ jobs:
         run: pip3 install -r requirements.txt
 
       - name: Run Tests
-        run: make test  # ✅ corrected (was make tests)
+        run: make tests  # ✅ corrected (was make tests)
 
   security-scan:
     name: Security Scan
