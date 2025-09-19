@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write  # ✅ Required to allow git push and tag creation
+
 jobs:
   lint:
     name: Lint
@@ -38,7 +41,7 @@ jobs:
         run: pip3 install -r requirements.txt
 
       - name: Run Tests
-        run: make tests
+        run: make test  # ✅ corrected (was make tests)
 
   security-scan:
     name: Security Scan
@@ -56,6 +59,7 @@ jobs:
         # run: |
         #   pip3 install bandit
         #   bandit -r .
+
   increment-version:
     if: >
       (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main')
@@ -69,26 +73,27 @@ jobs:
           ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
           fetch-depth: 0
           lfs: true
+          persist-credentials: true  # ✅ ensures GITHUB_TOKEN is used for push/tag
+
       - name: Configure Git
         run: |
           git config user.name "GitHub Actions"
           git config user.email "noreply@github.com"
+
       - name: Make semver script executable
         run: chmod +x semver.sh
+
       - name: Create and push version tag
         run: |
           git fetch --tags --force --prune
           ./semver.sh
+
       - name: Get the new tag
         id: get_tag
         run: |
           NEW_TAG=$(git describe --tags --abbrev=0)
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
           echo "New tag created: $NEW_TAG"
+
     outputs:
       version: ${{ steps.get_tag.outputs.new_tag }}
-
-
-          
-
-
