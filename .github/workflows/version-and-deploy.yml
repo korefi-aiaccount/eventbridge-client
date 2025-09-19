@@ -68,7 +68,23 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Version Script
+        run: chmod +x semver.sh
+
+      - name: Create and push version tag
         run: |
-          chmod +x semver.sh
+          git fetch --tags --force --prune
           ./semver.sh
+
+      - name: Get the new tag
+        id: get_tag
+        run: |
+          NEW_TAG=$(git describe --tags --abbrev=0)
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "New tag created: $NEW_TAG"
+    outputs: 
+      version: ${{ steps.get_tag.outputs.new_tag }}
+      
+
+          
+
 
