@@ -56,34 +56,38 @@ jobs:
         # run: |
         #   pip3 install bandit
         #   bandit -r .
-
   increment-version:
-    name: Increment Patch Version
+    #needs: detect-changes
+    if: needs.detect-changes.outputs.non_experiment_changed == 'true'
+    name: Create SemVer Tag
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    container:
-      image: python:3.9
     steps:
-      - name: Checkout Code
+      - name: Checkout merged commit
         uses: actions/checkout@v4
-
-      - name: Run Version Script
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          lfs: true
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "noreply@github.com"
+      - name: Make semver script executable
         run: chmod +x semver.sh
-
       - name: Create and push version tag
         run: |
           git fetch --tags --force --prune
           ./semver.sh
-
       - name: Get the new tag
         id: get_tag
         run: |
           NEW_TAG=$(git describe --tags --abbrev=0)
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
           echo "New tag created: $NEW_TAG"
-    outputs: 
+    outputs:
       version: ${{ steps.get_tag.outputs.new_tag }}
-      
+
+
 
           
 
