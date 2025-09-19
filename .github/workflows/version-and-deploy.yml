@@ -38,8 +38,8 @@ jobs:
         run: pip3 install -r requirements.txt
 
       - name: Run Tests
-        run: make test
-
+        run: |
+          make test || (echo "make test failed, running pytest directly for debugging..."; PYTHONPATH=. pytest tests/; exit 1)
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
