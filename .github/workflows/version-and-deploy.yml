@@ -38,7 +38,11 @@ jobs:
       - name: Run tests with pytest
         run: |
           pip install pytest
-          PYTHONPATH=. pytest tests/
+          if [ -d tests ] && [ "$(ls -A tests)" ]; then
+            PYTHONPATH=. pytest tests/
+          else
+            echo "No tests found in the 'tests/' directory. Skipping pytest."
+          fi
   security_scan:
     runs-on: ubuntu-latest
     needs: test
