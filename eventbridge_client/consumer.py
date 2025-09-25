@@ -177,22 +177,31 @@ class SQSConsumer:
 
     async def start_async(self, process_message: Callable[[Dict[str, Any]], None]):
         """
-        Start the SQS consumer with async message processing.
-        This implementation processes messages asynchronously using asyncio.gather()
-        to handle multiple messages concurrently while maintaining proper error handling
-        and message deletion.
+        Start the SQS consumer with truly async message processing.
+        This implementation continuously polls for new messages while processing
+        existing messages concurrently, allowing for better throughput.
 
         :param process_message: Callable to process each message.
-        :param max_messages: Maximum number of messages to retrieve per poll (default: 1).
         """
         self.is_running = True
+        
+        # Start polling task in the background
+        asyncio.create_task(self._poll_messages_continuously(process_message))
+        
+        # Keep the function running while the consumer is active
+        while self.is_running:
+            await asyncio.sleep(1)
 
+    async def _poll_messages_continuously(self, process_message: Callable[[Dict[str, Any]], None]):
+        """
+        Continuously poll for messages and spawn processing tasks.
+        """
         while self.is_running:
             try:
                 self.logger.info(f"Polling SQS queue: {self.queue_url}")
                 response = self.sqs_client.receive_message(
                     QueueUrl=self.queue_url,
-                    MaxNumberOfMessages=self.max_messages,
+                    MaxNumberOfMessages=self.max_messages,  # Process one message at a time for better distribution
                     WaitTimeSeconds=self.wait_time,
                     VisibilityTimeout=self.visibility_timeout,
                 )
@@ -200,12 +209,9 @@ class SQSConsumer:
                 messages = response.get("Messages", [])
                 self.logger.info(f"Received {len(messages)} messages")
 
-                if messages:
-                    tasks = []
-                    for message in messages:
-                        task = self._process_message_async(message, process_message)
-                        tasks.append(task)
-                    await asyncio.gather(*tasks, return_exceptions=True)
+                # Spawn processing tasks without waiting for them to complete
+                for message in messages:
+                    asyncio.create_task(self._process_message_async(message, process_message))
 
             except ClientError as e:
                 self.logger.error(f"Error receiving messages: {str(e)}")
