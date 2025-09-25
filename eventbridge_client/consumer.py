@@ -175,6 +175,82 @@ class SQSConsumer:
 
             await asyncio.sleep(self.poll_interval)
 
+    async def start_async(self, process_message: Callable[[Dict[str, Any]], None]):
+        """
+        Start the SQS consumer with async message processing.
+        
+        This implementation processes messages asynchronously using asyncio.gather()
+        to handle multiple messages concurrently while maintaining proper error handling
+        and message deletion.
+
+        :param process_message: Callable to process each message.
+        :param max_messages: Maximum number of messages to retrieve per poll (default: 1).
+        """
+        self.is_running = True
+
+        while self.is_running:
+            try:
+                self.logger.info(f"Polling SQS queue: {self.queue_url}")
+                response = self.sqs_client.receive_message(
+                    QueueUrl=self.queue_url,
+                    MaxNumberOfMessages=self.max_messages,
+                    WaitTimeSeconds=self.wait_time,
+                    VisibilityTimeout=self.visibility_timeout,
+                )
+
+                messages = response.get("Messages", [])
+                self.logger.info(f"Received {len(messages)} messages")
+
+                if messages:
+                    tasks = []
+                    for message in messages:
+                        task = self._process_message_async(message, process_message)
+                        tasks.append(task)
+                    
+                    await asyncio.gather(*tasks, return_exceptions=True)
+
+            except ClientError as e:
+                self.logger.error(f"Error receiving messages: {str(e)}")
+                if "InvalidClientTokenId" in str(e):
+                    self.logger.error(
+                        "Invalid AWS credentials. Please check your AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
+                    )
+                    break
+
+            await asyncio.sleep(self.poll_interval)
+
+    async def _process_message_async(
+        self,
+        message: Dict[str, Any],
+        process_message: Callable[[Dict[str, Any]], None],
+    ):
+        """
+        Process a single message asynchronously with proper error handling.
+
+        :param message: The SQS message to process.
+        :param process_message: Callable to process the message.
+        """
+        try:
+            body = message["Body"]
+            body_dict = json.loads(body)
+            get_detail = body_dict["detail"]
+
+            context = extract_trace_context(get_detail)
+            span_name = f"Consume {body_dict['detail-type']} Event"
+            
+            with self.tracer.start_as_current_span(
+                "consumer_wrapper", context, kind=trace.SpanKind.SERVER
+            ):
+                with self.tracer.start_as_current_span(span_name):
+                    await self._process_and_delete_message(message, process_message)
+                    
+        except asyncio.TimeoutError:
+            self.logger.error(
+                f"Message processing timed out after {self.processing_timeout} seconds"
+            )
+        except Exception as e:
+            self.logger.error(f"Error processing message: {str(e)}")
+
     def stop(self):
         """
         Stop the SQS consumer.
