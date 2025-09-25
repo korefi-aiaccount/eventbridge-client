@@ -178,7 +178,6 @@ class SQSConsumer:
     async def start_async(self, process_message: Callable[[Dict[str, Any]], None]):
         """
         Start the SQS consumer with async message processing.
-        
         This implementation processes messages asynchronously using asyncio.gather()
         to handle multiple messages concurrently while maintaining proper error handling
         and message deletion.
@@ -206,7 +205,6 @@ class SQSConsumer:
                     for message in messages:
                         task = self._process_message_async(message, process_message)
                         tasks.append(task)
-                    
                     await asyncio.gather(*tasks, return_exceptions=True)
 
             except ClientError as e:
@@ -237,13 +235,12 @@ class SQSConsumer:
 
             context = extract_trace_context(get_detail)
             span_name = f"Consume {body_dict['detail-type']} Event"
-            
+
             with self.tracer.start_as_current_span(
                 "consumer_wrapper", context, kind=trace.SpanKind.SERVER
             ):
                 with self.tracer.start_as_current_span(span_name):
                     await self._process_and_delete_message(message, process_message)
-                    
         except asyncio.TimeoutError:
             self.logger.error(
                 f"Message processing timed out after {self.processing_timeout} seconds"
