@@ -184,10 +184,8 @@ class SQSConsumer:
         :param process_message: Callable to process each message.
         """
         self.is_running = True
-        
         # Start polling task in the background
         asyncio.create_task(self._poll_messages_continuously(process_message))
-        
         # Keep the function running while the consumer is active
         while self.is_running:
             await asyncio.sleep(1)
