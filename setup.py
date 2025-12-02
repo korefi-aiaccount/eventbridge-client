@@ -17,8 +17,6 @@ setup(
         "opentelemetry-instrumentation-botocore",
         "opentelemetry-semantic-conventions",
         "opentelemetry-api==1.25.0",
-        "opentelemetry-exporter-jaeger==1.21.0",
-        "opentelemetry-exporter-jaeger-proto-grpc==1.21.0",
         "opentelemetry-exporter-jaeger-thrift==1.21.0",
         "opentelemetry-exporter-otlp-proto-common==1.25.0",
         "opentelemetry-exporter-otlp-proto-grpc==1.25.0",
